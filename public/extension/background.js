@@ -1,7 +1,7 @@
 /**
  * UltraRec - Background Service Worker (Manifest V3)
  * Coordinates recording state, offscreen media document lifecycle, badge indicators,
- * keyboard shortcuts, and file downloads.
+ * keyboard shortcuts, and graceful download teardown.
  */
 
 const OFFSCREEN_DOCUMENT_PATH = 'offscreen.html';
@@ -27,7 +27,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'toggle-recording') {
     if (recordingState.status === 'idle') {
-      // Start recording with default/saved settings
       const saved = await chrome.storage.local.get(['ultrarec_settings']);
       const settings = saved.ultrarec_settings || {
         resolution: '4k',
@@ -94,9 +93,12 @@ async function handleIncomingMessage(message, sender, sendResponse) {
         break;
 
       case 'RECORDING_COMPLETE':
-        // Received recorded video data url from offscreen document
-        await handleRecordingDownload(message.dataUrl, message.mimeType);
+        // Download was completed safely by the offscreen engine
         resetState();
+        // Wait 2 seconds before closing offscreen document to ensure file streams are freed
+        setTimeout(async () => {
+          await closeOffscreenDocument();
+        }, 2000);
         sendResponse({ success: true });
         break;
 
@@ -104,7 +106,7 @@ async function handleIncomingMessage(message, sender, sendResponse) {
         sendResponse({ error: 'Unknown message type' });
     }
   } catch (error) {
-    console.error('UltraRec Background Error:', error);
+    console.error('[UltraRec Background Error]', error);
     sendResponse({ success: false, error: error.message || 'Operation failed' });
   }
 }
@@ -113,7 +115,9 @@ async function startRecordingFlow(settings) {
   try {
     await ensureOffscreenDocument();
 
-    // Send start signal to offscreen document
+    // Small delay to ensure offscreen document scripts are fully executed
+    await new Promise(r => setTimeout(r, 200));
+
     const response = await chrome.runtime.sendMessage({
       type: 'OFFSCREEN_START_CAPTURE',
       target: 'offscreen',
@@ -155,25 +159,6 @@ async function stopRecordingFlow() {
   } catch (err) {
     resetState();
     return { success: false, error: err.message };
-  }
-}
-
-async function handleRecordingDownload(dataUrl, mimeType) {
-  const isMp4 = mimeType && mimeType.includes('mp4');
-  const ext = isMp4 ? 'mp4' : 'webm';
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const filename = `UltraRec_${timestamp}.${ext}`;
-
-  try {
-    await chrome.downloads.download({
-      url: dataUrl,
-      filename: filename,
-      saveAs: true
-    });
-  } catch (err) {
-    console.error('UltraRec Download Error:', err);
-  } finally {
-    await closeOffscreenDocument();
   }
 }
 
@@ -219,7 +204,6 @@ async function hasOffscreenDocument() {
     });
     return contexts.length > 0;
   }
-  // Fallback check
   return false;
 }
 

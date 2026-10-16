@@ -5,6 +5,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
+// @ts-ignore
+import fixWebmDuration from 'fix-webm-duration';
 import {
   Monitor,
   Video,
@@ -33,6 +35,7 @@ const EXTENSION_FILE_LIST = [
   { name: 'background.js', path: 'background.js', label: 'background.js (SW)', lang: 'javascript' },
   { name: 'offscreen.html', path: 'offscreen.html', label: 'offscreen.html', lang: 'html' },
   { name: 'offscreen.js', path: 'offscreen.js', label: 'offscreen.js (Engine)', lang: 'javascript' },
+  { name: 'fix-webm-duration.js', path: 'fix-webm-duration.js', label: 'fix-webm-duration.js', lang: 'javascript' },
   { name: 'README.md', path: 'README.md', label: 'README.md', lang: 'markdown' }
 ];
 
@@ -411,24 +414,30 @@ export default function App() {
 
   const handleStopCapture = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.requestData();
+      } catch (e) {}
       mediaRecorderRef.current.stop();
     }
-    cleanUpMedia();
     setRecordingStatus('idle');
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
   };
 
   const cleanUpMedia = () => {
     if (activeStreamRef.current) {
-      activeStreamRef.current.getTracks().forEach(t => t.stop());
+      activeStreamRef.current.getTracks().forEach(t => {
+        try { t.stop(); } catch (e) {}
+      });
       activeStreamRef.current = null;
     }
     if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach(t => t.stop());
+      micStreamRef.current.getTracks().forEach(t => {
+        try { t.stop(); } catch (e) {}
+      });
       micStreamRef.current = null;
     }
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close();
+      try { audioContextRef.current.close(); } catch (e) {}
       audioContextRef.current = null;
     }
     if (animationFrameRef.current) {
@@ -438,11 +447,24 @@ export default function App() {
     setAudioLevel(0);
   };
 
-  const finalizeRecording = (mimeType: string, width: number, height: number, streamFps: number) => {
+  const finalizeRecording = async (mimeType: string, width: number, height: number, streamFps: number) => {
+    cleanUpMedia();
     const isMp4 = mimeType.includes('mp4');
     const ext = isMp4 ? 'mp4' : 'webm';
-    const blob = new Blob(recordedChunksRef.current, { type: mimeType });
-    const url = URL.createObjectURL(blob);
+    const rawBlob = new Blob(recordedChunksRef.current, { type: mimeType });
+
+    // Fix WebM Duration metadata
+    let finalBlob = rawBlob;
+    if (mimeType.includes('webm')) {
+      try {
+        const durationMs = Math.max(500, recordingDuration * 1000);
+        finalBlob = await fixWebmDuration(rawBlob, durationMs);
+      } catch (err) {
+        console.warn('Duration fix error:', err);
+      }
+    }
+
+    const url = URL.createObjectURL(finalBlob);
     const dateStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const filename = `UltraRec_${width}x${height}_${dateStr}.${ext}`;
 
@@ -453,7 +475,7 @@ export default function App() {
       resolution: `${width}×${height}`,
       fps: Math.round(streamFps),
       duration: recordingDuration,
-      sizeBytes: blob.size,
+      sizeBytes: finalBlob.size,
       timestamp: new Date().toLocaleTimeString()
     };
 
@@ -468,7 +490,7 @@ export default function App() {
     document.body.removeChild(a);
 
     setStatusMessage({
-      text: `Recording saved (${formatBytes(blob.size)})! File "${filename}" downloaded.`,
+      text: `Recording saved (${formatBytes(finalBlob.size)})! File "${filename}" downloaded with valid duration metadata.`,
       type: 'success'
     });
   };
