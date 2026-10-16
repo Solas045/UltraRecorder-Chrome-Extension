@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UltraRec · 4K 60FPS Studio</title>
+  <style>
+    /* UltraRec High-End Dark Studio Design System */
+    *, ::before, ::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    :root {
+      --bg-base: #070a11;
+      --bg-card: #0d121f;
+      --bg-card-hover: #131a2b;
+      --bg-surface: #141c2e;
+      --border-subtle: #1c263c;
+      --border-focus: #ef4444;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-red: #ef4444;
+      --accent-red-hover: #dc2626;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+    }
+    body {
+      width: 380px;
+      min-height: 560px;
+      margin: 0;
+      padding: 16px;
+      background: var(--bg-base);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    /* Top Brand Bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-insignia {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #f43f5e 0%, #dc2626 50%, #991b1b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+      flex-shrink: 0;
+    }
+    .brand-insignia svg {
+      width: 16px;
+      height: 16px;
+      fill: #ffffff;
+    }
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+    .brand-sub {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-red);
+      font-family: ui-monospace, "SF Mono", monospace;
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      transition: all 0.2s ease;
+    }
+    .status-dot.rec {
+      background: var(--accent-red);
+      box-shadow: 0 0 10px var(--accent-red);
+      animation: pulseRecord 1.4s infinite ease-in-out;
+    }
+    .status-dot.pause {
+      background: var(--accent-amber);
+      box-shadow: 0 0 8px var(--accent-amber);
+    }
+    @keyframes pulseRecord {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    /* Stopwatch HUD Card */
+    .hud-card {
+      margin-top: 14px;
+      background: linear-gradient(180deg, rgba(16, 23, 38, 0.7) 0%, rgba(10, 14, 24, 0.9) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      position: relative;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      transition: border-color 0.2s ease;
+    }
+    .hud-card.active-recording {
+      border-color: rgba(239, 68, 68, 0.4);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.1), inset 0 1px 0 rgba(239, 68, 68, 0.2);
+    }
+    .timer-digits {
+      font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    .timer-telemetry {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 8px;
+      font-family: ui-monospace, "SF Mono", monospace;
+    }
+    .telemetry-tag {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+    }
+
+    /* VU Equalizer Bar */
+    .vu-meter-wrap {
+      margin-top: 10px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+    }
+    .vu-meter-wrap.visible {
+      display: flex;
+    }
+    .vu-icon {
+      width: 13px;
+      height: 13px;
+      fill: var(--text-muted);
+    }
+    .vu-track {
+      flex: 1;
+      height: 5px;
+      background: #111827;
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    .vu-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981 0%, #f59e0b 70%, #ef4444 100%);
+      border-radius: 3px;
+      transition: width 0.08s ease;
+    }
+    .vu-label {
+      font-size: 10px;
+      font-family: ui-monospace, monospace;
+      color: var(--text-dim);
+      min-width: 28px;
+      text-align: right;
+    }
+
+    /* Section Headers */
+    .section-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+
+    /* Resolution Selector Cards */
+    .res-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .res-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .res-card:hover {
+      background: var(--bg-card-hover);
+      border-color: #2b3954;
+      transform: translateY(-1px);
+    }
+    .res-card.active {
+      background: rgba(239, 68, 68, 0.09);
+      border-color: rgba(239, 68, 68, 0.7);
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.15);
+    }
+    .res-card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+    .res-card.active .res-card-name {
+      color: #fca5a5;
+    }
+    .res-card-dim {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: ui-monospace, monospace;
+      margin-top: 3px;
+    }
+    .res-card-badge {
+      position: absolute;
+      top: -5px;
+      right: 6px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    /* FPS & Codec Segmented Controls */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .segmented-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .box-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .pill-group {
+      display: flex;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px;
+      border-radius: 6px;
+      gap: 2px;
+    }
+    .pill-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .pill-btn:hover {
+      color: #ffffff;
+    }
+    .pill-btn.active {
+      background: var(--bg-surface);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Sleek Custom Select */
+    .select-wrap {
+      position: relative;
+    }
+    select.custom-select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-main);
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color 0.15s ease;
+    }
+    select.custom-select:focus {
+      border-color: var(--border-focus);
+    }
+    .select-arrow {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      width: 10px;
+      height: 10px;
+      fill: var(--text-muted);
+    }
+
+    /* Audio Source Toggle Switches */
+    .audio-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .audio-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
+      cursor: pointer;
+    }
+    .audio-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+    .audio-left svg {
+      width: 15px;
+      height: 15px;
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      fill: none;
+    }
+    .switch-ui {
+      position: relative;
+      width: 34px;
+      height: 18px;
+      background: #1e293b;
+      border-radius: 18px;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+    .switch-ui::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      background: #ffffff;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    input[type="checkbox"] {
+      display: none;
+    }
+    input[type="checkbox"]:checked + .switch-ui {
+      background: var(--accent-red);
+    }
+    input[type="checkbox"]:checked + .switch-ui::after {
+      transform: translateX(16px);
+    }
+
+    /* Action Buttons */
+    .actions-wrap {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-main-record {
+      width: 100%;
+      border: none;
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%);
+      color: #ffffff;
+      font-size: 13.5px;
+      font-weight: 700;
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      box-shadow: 0 4px 18px rgba(225, 29, 72, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-main-record:hover {
+      background: linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #e11d48 100%);
+      box-shadow: 0 6px 24px rgba(225, 29, 72, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    .btn-main-record:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 10px rgba(225, 29, 72, 0.4);
+    }
+    .record-shutter {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+      position: relative;
+    }
+    .record-shutter::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border: 1.5px solid rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+    }
+
+    /* Active Recording State Controls */
+    .recording-controls-grid {
+      display: none;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 8px;
+    }
+    .recording-controls-grid.show {
+      display: grid;
+    }
+    .btn-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-pause-state {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+    }
+    .btn-pause-state:hover {
+      background: #334155;
+      color: #ffffff;
+    }
+    .btn-stop-state {
+      background: linear-gradient(135deg, #881337 0%, #4c0519 100%);
+      color: #fecdd3;
+      border: 1px solid #9f1239;
+      box-shadow: 0 2px 10px rgba(159, 18, 57, 0.3);
+    }
+    .btn-stop-state:hover {
+      background: linear-gradient(135deg, #9f1239 0%, #700925 100%);
+      color: #ffffff;
+    }
+
+    /* Countdown Modal Backdrop */
+    .countdown-layer {
+      position: absolute;
+      inset: 0;
+      background: rgba(7, 10, 17, 0.94);
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(6px);
+      border-radius: 0 0 12px 12px;
+    }
+    .countdown-layer.active {
+      display: flex;
+    }
+    .countdown-num {
+      font-size: 72px;
+      font-weight: 900;
+      font-family: ui-monospace, "SF Mono", monospace;
+      color: var(--accent-red);
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+      animation: countPulse 0.9s infinite ease-out;
+    }
+    @keyframes countPulse {
+      0% { transform: scale(1.3); opacity: 0; }
+      40% { transform: scale(1); opacity: 1; }
+      90% { transform: scale(0.92); opacity: 0.8; }
+    }
+    .countdown-cancel {
+      margin-top: 16px;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .countdown-cancel:hover {
+      color: #ffffff;
+      border-color: #334155;
+    }
+
+    /* Status Notifications */
+    .status-toast {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      line-height: 1.4;
+      display: none;
+    }
+    .status-toast.err {
+      display: block;
+      background: rgba(225, 29, 72, 0.12);
+      border: 1px solid rgba(225, 29, 72, 0.35);
+      color: #fecdd3;
+    }
+    .status-toast.inf {
+      display: block;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #bfdbfe;
+    }
+
+    /* Shortcut Footer */
+    .footer-hint {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 10.5px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    kbd {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 9.5px;
+      font-family: ui-monospace, monospace;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header Bar -->
+  <div class="top-bar">
+    <div class="brand-cluster">
+      <div class="brand-insignia">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/></svg>
+      </div>
+      <div>
+        <div class="brand-title">UltraRec</div>
+        <div class="brand-sub">4K · 60FPS STUDIO</div>
+      </div>
+    </div>
+    <div class="status-pill" id="recordingBadge">
+      <span class="status-dot" id="badgeDot"></span>
+      <span id="badgeText">STANDBY</span>
+    </div>
+  </div>
+
+  <!-- Countdown Overlay -->
+  <div class="countdown-layer" id="countdownOverlay">
+    <div class="countdown-num" id="countdownNumber">3</div>
+    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 8px;">Calibrating 4K capture...</div>
+    <button class="countdown-cancel" id="cancelCountdownBtn">Cancel</button>
+  </div>
+
+  <!-- Stopwatch HUD Card -->
+  <div class="hud-card" id="hudCard">
+    <div class="timer-digits" id="timerDisplay">00:00:00</div>
+    <div class="timer-telemetry">
+      <span class="telemetry-tag" id="activeResLabel">4K UHD</span>
+      <span>·</span>
+      <span class="telemetry-tag" id="activeFpsLabel">60 FPS</span>
+      <span>·</span>
+      <span class="telemetry-tag" id="activeBitrateLabel">40 Mbps</span>
+    </div>
+
+    <!-- Active VU Level Equalizer -->
+    <div class="vu-meter-wrap" id="vuMeterWrap">
+      <svg class="vu-icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      <div class="vu-track">
+        <div class="vu-fill" id="vuFill"></div>
+      </div>
+      <span class="vu-label" id="vuLabel">LIVE</span>
+    </div>
+  </div>
+
+  <!-- Interactive Configuration Form -->
+  <div id="settingsContainer">
+    <!-- Resolution Selection Cards -->
+    <div class="section-label">
+      <span>Target Resolution</span>
+      <span style="font-size: 9.5px; color: #ef4444; font-family: ui-monospace;">AUTO-FALLBACK ON</span>
+    </div>
+    <div class="res-grid" id="resGrid">
+      <div class="res-card active" data-res="4k">
+        <div class="res-card-badge">4K</div>
+        <div class="res-card-name">3840×2160</div>
+        <div class="res-card-dim">40 Mbps</div>
+      </div>
+      <div class="res-card" data-res="1440p">
+        <div class="res-card-name">1440p QHD</div>
+        <div class="res-card-dim">2560×1440</div>
+      </div>
+      <div class="res-card" data-res="1080p">
+        <div class="res-card-name">1080p FHD</div>
+        <div class="res-card-dim">1920×1080</div>
+      </div>
+    </div>
+    <!-- Hidden select to store value -->
+    <select id="resolutionSelect" style="display: none;">
+      <option value="4k" selected>4k</option>
+      <option value="1440p">1440p</option>
+      <option value="1080p">1080p</option>
+    </select>
+
+    <!-- Framerate & Format Controls -->
+    <div class="controls-grid">
+      <div class="segmented-box">
+        <div class="box-label">Framerate (FPS)</div>
+        <div class="pill-group" id="fpsGroup">
+          <button type="button" class="pill-btn active" data-fps="60">60 FPS</button>
+          <button type="button" class="pill-btn" data-fps="30">30 FPS</button>
+        </div>
+        <input type="hidden" id="fpsSelect" value="60" />
+      </div>
+
+      <div class="segmented-box">
+        <div class="box-label">Countdown Delay</div>
+        <div class="pill-group" id="countdownGroup">
+          <button type="button" class="pill-btn active" data-delay="3">3s</button>
+          <button type="button" class="pill-btn" data-delay="5">5s</button>
+          <button type="button" class="pill-btn" data-delay="0">Off</button>
+        </div>
+        <input type="hidden" id="countdownSelect" value="3" />
+      </div>
+    </div>
+
+    <!-- Codec Selection -->
+    <div class="segmented-box" style="margin-top: 8px;">
+      <div class="box-label" style="margin-bottom: 2px;">Video Encoding Engine</div>
+      <div class="select-wrap">
+        <select class="custom-select" id="codecSelect">
+          <option value="video/webm;codecs=vp9,opus" selected>WebM · VP9 Profile (Cinematic Fidelity)</option>
+          <option value="video/webm;codecs=vp8,opus">WebM · VP8 (High Compatibility)</option>
+          <option value="video/webm;codecs=h264,opus">WebM · H.264 / AVC</option>
+          <option value="video/mp4">MP4 · Universal Container</option>
+        </select>
+        <svg class="select-arrow" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+      </div>
+    </div>
+
+    <!-- Audio Source Toggles -->
+    <div class="section-label">Audio Mixing Console</div>
+    <div class="audio-group">
+      <label class="audio-row" for="systemAudioToggle">
+        <div class="audio-left">
+          <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          <span>System / Tab Audio</span>
+        </div>
+        <input type="checkbox" id="systemAudioToggle" checked />
+        <span class="switch-ui"></span>
+      </label>
+
+      <label class="audio-row" for="micAudioToggle">
+        <div class="audio-left">
+          <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+          <span>Microphone Input</span>
+        </div>
+        <input type="checkbox" id="micAudioToggle" />
+        <span class="switch-ui"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Status / Info Banner -->
+  <div class="status-toast" id="statusBanner"></div>
+
+  <!-- Action Controls -->
+  <div class="actions-wrap">
+    <!-- Standby Mode Record Button -->
+    <button class="btn-main-record" id="startBtn">
+      <div class="record-shutter"></div>
+      <span>Start 4K 60FPS Recording</span>
+    </button>
+
+    <!-- Recording Mode Controls -->
+    <div class="recording-controls-grid" id="recordingControls">
+      <button class="btn-action btn-pause-state" id="pauseBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        <span id="pauseBtnText">Pause</span>
+      </button>
+      <button class="btn-action btn-stop-state" id="stopBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+        <span>Finish & Save</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Shortcut Footer -->
+  <div class="footer-hint">
+    <span>Shortcut:</span>
+    <kbd>Ctrl+Shift+S</kbd>
+    <span>or</span>
+    <kbd>⌘+Shift+S</kbd>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

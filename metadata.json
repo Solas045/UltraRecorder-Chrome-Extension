@@ -1,0 +1,6 @@
+{
+  "name": "UltraRec - 4K 60FPS Chrome Screen Recorder",
+  "description": "Production-ready Chrome Extension (Manifest V3) for high-performance screen recording up to 4K 60fps with audio mixing.",
+  "requestFramePermissions": ["camera", "microphone", "display-capture"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
